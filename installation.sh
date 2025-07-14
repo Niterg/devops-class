@@ -32,13 +32,18 @@ echo "[7/12] Building frontend..."
 tmux new-session -d -s frontend 'npm run start'
 
 echo "[8/12] Creating Nginx configs using public IP..."
-PUBLIC_IP=$(curl -s ifconfig.me)
+PUBLIC_IP=$(curl -s --connect-timeout 3 ifconfig.me || curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+
+if [[ -z "$PUBLIC_IP" ]]; then
+    echo "❌ Could not determine public IP. Exiting."
+    exit 1
+fi
 
 # Frontend configuration
-sudo tee /etc/nginx/sites-available/frontendconf > /dev/null <<EOF
+cat <<'EOF' | sed "s|__PUBLIC_IP__|$PUBLIC_IP|g" | sudo tee /etc/nginx/sites-available/frontendconf > /dev/null
 server {
     listen 80;
-    server_name $PUBLIC_IP;
+    server_name __PUBLIC_IP__;
 
     access_log /var/log/nginx/frontend_access.log;
     error_log /var/log/nginx/frontend_error.log warn;
