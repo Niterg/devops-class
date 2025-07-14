@@ -76,4 +76,5 @@ sudo apt install -y certbot python3-certbot-nginx
 echo "[12/12] Setup complete!"
 echo "Frontend: http://$PUBLIC_IP"
 echo "Backend: http://$PUBLIC_IP/backend"
+echo "To access frontend tmux: tmux attach -t frontend"
 echo "To access backend tmux: tmux attach -t backend"
