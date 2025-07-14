@@ -38,7 +38,7 @@ PUBLIC_IP=$(curl -s ifconfig.me)
 sudo tee /etc/nginx/sites-available/frontendconf > /dev/null <<EOF
 server {
     listen 80;
-    server_name 3.88.22.196;
+    server_name $PUBLIC_IP;
 
     access_log /var/log/nginx/frontend_access.log;
     error_log /var/log/nginx/frontend_error.log warn;
