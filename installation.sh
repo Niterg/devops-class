@@ -38,23 +38,27 @@ PUBLIC_IP=$(curl -s ifconfig.me)
 sudo tee /etc/nginx/sites-available/frontendconf > /dev/null <<EOF
 server {
     listen 80;
-    server_name $PUBLIC_IP;
+    server_name 3.88.22.196;
 
     access_log /var/log/nginx/frontend_access.log;
     error_log /var/log/nginx/frontend_error.log warn;
 
     location / {
-        root $(pwd)/build;
-        try_files \$uri /index.html;
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location /api {
-        proxy_pass http://localhost:3001;
+    location /backend/ {
+        proxy_pass http://localhost:3001/;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 EOF
@@ -71,5 +75,5 @@ sudo apt install -y certbot python3-certbot-nginx
 
 echo "[12/12] Setup complete!"
 echo "Frontend: http://$PUBLIC_IP"
-echo "Backend: http://$PUBLIC_IP/api"
+echo "Backend: http://$PUBLIC_IP/backend"
 echo "To access backend tmux: tmux attach -t backend"
