@@ -29,7 +29,7 @@ cd ../client
 npm install
 
 echo "[7/12] Building frontend..."
-npm run build
+tmux new-session -d -s frontend 'npm run start'
 
 echo "[8/12] Creating Nginx configs using public IP..."
 PUBLIC_IP=$(curl -s ifconfig.me)
