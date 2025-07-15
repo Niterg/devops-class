@@ -83,7 +83,7 @@ echo "Backend: http://$PUBLIC_IP/backend"
 echo "To access frontend tmux: tmux attach -t frontend"
 # echo "To access backend tmux: tmux attach -t backend"
 
-echo "[13] Running backend as service"
+echo "[13] Creating backend systemd service"
 cat <<'EOF' | sudo tee /etc/systemd/system/backend.service > /dev/null
 [Unit]
 Description=Your Node.js Backend
@@ -103,13 +103,25 @@ SyslogIdentifier=client
 WantedBy=multi-user.target
 EOF
 
-echo "[14] Running backend as service"
+echo "[14] Starting backend systemd service..."
 sudo systemctl daemon-reload
 sudo systemctl start backend.service
+
+# Wait until the service is active
+echo "[15] Waiting for backend service to become active..."
+sudo systemctl is-active --quiet backend.service
+while [ $? -ne 0 ]; do
+    sleep 2
+    echo " Waiting for backend.service to become active..."
+    sudo systemctl is-active --quiet backend.service
+done
+
+echo "backend.service is active"
+
+# Now view logs
 journalctl -u backend.service | grep port
 
-echo "[15] Installing mysql"
+echo "[16] Installing MySQL..."
 sudo apt update
-sudo apt install mysql-server
-
+sudo apt install -y mysql-server
 
