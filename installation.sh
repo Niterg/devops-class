@@ -2,36 +2,36 @@
 
 set -e
 
-echo "[1/12] Cloning project repository..."
+echo "[1] Cloning project repository..."
 git clone https://github.com/sshresthadh/devops-class.git
 cd devops-class/
 
-echo "[2/12] Installing NVM and Node.js 14..."
+echo "[2] Installing NVM and Node.js 14..."
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 nvm install 14
 nvm use 14
 
-echo "[3/12] Installing Nginx and tmux..."
+echo "[3] Installing Nginx and tmux..."
 sudo apt update
 sudo apt install -y nginx tmux
 
-echo "[4/12] Installing dependencies for server..."
+echo "[4] Installing dependencies for server..."
 cd all_in_docker/server
 npm install
 
-echo "[5/12] Starting backend server on port 3001 (in background)..."
-tmux new-session -d -s backend 'node index.js'
+echo "[5] Starting backend server on port 3001 (in background)..."
+# tmux new-session -d -s backend 'node index.js'
 
-echo "[6/12] Installing dependencies for client..."
+echo "[6] Installing dependencies for client..."
 cd ../client
 npm install
 
-echo "[7/12] Building frontend..."
+echo "[7] Building frontend..."
 tmux new-session -d -s frontend 'npm run start'
 
-echo "[8/12] Creating Nginx configs using public IP..."
+echo "[8] Creating Nginx configs using public IP..."
 PUBLIC_IP=$(curl -s --connect-timeout 3 ifconfig.me || curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 
 if [[ -z "$PUBLIC_IP" ]]; then
@@ -68,18 +68,48 @@ server {
 }
 EOF
 
-echo "[9/12] Enabling Nginx configuration..."
+echo "[9] Enabling Nginx configuration..."
 sudo ln -sf /etc/nginx/sites-available/frontendconf /etc/nginx/sites-enabled/
 # sudo rm -f /etc/nginx/sites-enabled/default
 
-echo "[10/12] Testing and restarting Nginx..."
+echo "[10] Testing and restarting Nginx..."
 sudo nginx -t && sudo systemctl restart nginx
 
-echo "[11/12] Installing Certbot..."
+echo "[11] Installing Certbot..."
 sudo apt install -y certbot python3-certbot-nginx
 
-echo "[12/12] Setup complete!"
 echo "Frontend: http://$PUBLIC_IP"
 echo "Backend: http://$PUBLIC_IP/backend"
 echo "To access frontend tmux: tmux attach -t frontend"
-echo "To access backend tmux: tmux attach -t backend"
+# echo "To access backend tmux: tmux attach -t backend"
+
+echo "[13] Running backend as service"
+cat <<'EOF' | sudo tee /etc/systemd/system/backend.service > /dev/null
+[Unit]
+Description=Your Node.js Backend
+After=network.target
+
+[Service]
+Environment=NODE_ENV=production
+ExecStart=/home/ubuntu/.nvm/versions/node/v14.21.3/bin/node index.js
+WorkingDirectory=/home/ubuntu/devops-class/all_in_docker/server
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=client
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "[14] Running backend as service"
+sudo systemctl daemon-reload
+sudo systemctl start backend.service
+journalctl -u backend.service | grep port
+
+echo "[15] Installing mysql"
+sudo apt update
+sudo apt install mysql-server
+
+
