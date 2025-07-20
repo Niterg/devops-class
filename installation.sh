@@ -119,7 +119,7 @@ done
 echo "backend.service is active"
 
 # Now view logs
-journalctl -u backend.service | grep port
+# journalctl -u backend.service | grep port
 
 echo "[16] Installing MySQL..."
 sudo apt update
