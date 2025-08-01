@@ -28,3 +28,11 @@ output "private_subnet_ids" {
   description = "IDs of the private subnets"
   value       = aws_subnet.mero_private_subnet[*].id
 }
+
+output "ssh_command" {
+  description = "SSH commands to connect to each instance"
+  value = {
+    for i, instance in aws_instance.mero_instances :
+    "MeroInstance-${i + 1}" => "ssh -i ${var.key_name}.pem ubuntu@${instance.public_ip}"
+  }
+}
